@@ -72,3 +72,121 @@ export default function Home() {
   );
 }
 ```
+
+## \_app.js file
+
+This is a root file for passing props to every components or wrapping all components with wrapper component like navigation bar.
+
+```js
+import Layout from '../components/layout/Layout';
+import '../styles/globals.css';
+
+function MyApp({ Component, pageProps }) {
+  return (
+    <Layout>
+      <Component {...pageProps} />
+    </Layout>
+  );
+}
+
+export default MyApp;
+```
+
+## Using programmatic (imperative) navigation
+
+```js
+// component
+import { useRouter } from 'next/router';
+
+import Card from '../ui/Card';
+import classes from './MeetupItem.module.css';
+
+function MeetupItem(props) {
+  const router = useRouter();
+
+  const showDetailsHandler = () => {
+    router.push('/' + props.id);
+  };
+
+  return (
+    <li className={classes.item}>
+      <Card>
+        <div className={classes.content}>
+          <h3>{props.title}</h3>
+          <address>{props.address}</address>
+        </div>
+        <div className={classes.actions}>
+          <button onClick={showDetailsHandler}>Show Details</button>
+        </div>
+      </Card>
+    </li>
+  );
+}
+
+export default MeetupItem;
+```
+
+## Pre-rendering
+
+When using pre-rendering, we will face the problem that the fetching data is not include in the HTML Page because pre-rendering will get the first elements that appear in the first lifecycle. It will not wait for data fetching.
+
+However, Next.js provides a solution for us with Two forms of pre-rendering:
+
+### Static Generation
+
+pre-render when build your site for production. When you deploy the project, the pre-rendered page does not change by default. If the pre-rendered page need to change, it will have to build again. This technique use when the application is not change frequently.
+
+If you need to add data fetching to a page component. You can add `getStaticProps()` inside page component (only in pages folder). It will call `getStaticProps()` function before it calls the component function. The job is to prepare the props for the component which contains all data that needed in that component. `getStaticProps()` can also be async function and Next.js will waits until the data is loaded. Therefore, the component can be rendered with required data.
+
+The code in `getStaticProps()` will normally only run on a server like access a file system here, fetch data from API and connect to database but will not execute on client side. This code is executed during the build process. Thus, it will not reach the computer of the visitors.
+
+#### Not using getStaticProps()
+
+```js
+// not using getStaticProps()
+const HomePage = (props) => {
+  const [loadedMeetups, setLoadMeetups] = useState([]);
+
+  useEffect(() => {
+    // fetching data from API
+    // ...
+    setLoadMeetups(data);
+  }, []);
+
+  return <MeetupList meetups={loadedMeetups} />;
+};
+
+export default HomePage;
+```
+
+Page Source
+
+![image](images/not-use-getStaticProps.jpg)
+
+#### Using getStaticProps()
+
+```js
+// using getStaticProps() - no need to use useEffect and useState
+const HomePage = (props) => {
+  return <MeetupList meetups={props.meetups} />;
+};
+
+export function getStaticProps() {
+  // fetching data from API
+  // ...
+
+  return {
+    props: {
+      meetups: data,
+    },
+  };
+}
+
+export default HomePage;
+```
+
+Page Source
+
+![image](images/use-getStaticProps.jpg)
+
+### Server-side Rendering
