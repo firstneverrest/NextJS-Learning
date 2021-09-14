@@ -1,38 +1,29 @@
+import { MongoClient } from 'mongodb';
 import MeetupList from '../components/meetups/MeetupList';
-
-const dummy = [
-  {
-    id: 'meet1',
-    title: 'Presentation',
-    image:
-      'https://images.unsplash.com/photo-1631515998698-5738f613c5cd?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80',
-    address: 'address 125, 12435 Panda City',
-  },
-  {
-    id: 'meet2',
-    title: 'Cooking',
-    image:
-      'https://images.unsplash.com/photo-1631515998698-5738f613c5cd?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80',
-    address: 'address 125, 12435 Panda City',
-  },
-  {
-    id: 'meet3',
-    title: 'Studying',
-    image:
-      'https://images.unsplash.com/photo-1631515998698-5738f613c5cd?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80',
-    address: 'address 125, 12435 Panda City',
-  },
-];
 
 const HomePage = (props) => {
   return <MeetupList meetups={props.meetups} />;
 };
 
-export function getStaticProps() {
+export async function getStaticProps() {
   // fetching data from API
+  const client = await MongoClient.connect(
+    'mongodb+srv://neverrest:AVGt4g8Kq6MDFPF6@cluster0.1f312.mongodb.net/myFirstDatabase?retryWrites=true&w=majority'
+  );
+  const db = client.db();
+  const meetupsCollection = db.collection('meetups');
+  const meetups = await meetupsCollection.find().toArray();
+  client.close();
+
   return {
     props: {
-      meetups: dummy,
+      meetups: meetups.map((meetup) => ({
+        title: meetup.title,
+        address: meetup.address,
+        image: meetup.image,
+        id: meetup._id.toString(),
+      })),
+      revalidate: 1,
     },
   };
 }
