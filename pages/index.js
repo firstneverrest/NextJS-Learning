@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -10,6 +11,8 @@ export default function Home() {
       </Head>
       <main>
         <h1>Next App</h1>
+        <Link href="/todolist">Todo List</Link>
+        <Link href="/todolist/addTask">addTask</Link>
       </main>
     </>
   );
