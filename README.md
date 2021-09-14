@@ -299,3 +299,116 @@ export async function getServerSideProps(context) {
   };
 }
 ```
+
+## API Route
+
+You can define API routes in Next.js like it is a server. Creating an src/api and the file_name.js in api folder will be the API route name. In the .js file in api folder, it is not about react component rendering but server-side code. Therefore, you can put credential in that file because it is not exposed to client.
+
+```js
+// hello.js
+export default function handler(req, res) {
+  if (req.method === 'POST') {
+    const data = req.body;
+
+    const { title, image, address, description } = data;
+
+    // keep data in database ...
+
+    res.status(200).json({ message: 'Good request' });
+  }
+}
+```
+
+## Connect to MongoDB Cloud for Database
+
+1. Install MongoDB from [official website](https://www.mongodb.com/).
+2. Click Try free and choose MongoDB Atlas.
+3. Choose free tier to start using free version.
+4. Set up the MongoDB Atlas
+   1. Build a cluster for your project
+   2. Go to Network Access section and add your IP address
+   3. Go to Database Access section and add user with username and password
+5. Connect your project to you cluster
+
+   1. Go to Databases section
+   2. Click Connect in chosen database
+   3. Select connect your application
+   4. Use npm install mongodb` to install mongodb driver in your project
+   5. Copy connection string into your application code
+
+```js
+// api/someFile.js
+import { MongoClient } from 'mongodb';
+
+export default function handler(req, res) {
+  if (req.method === 'POST') {
+    const data = JSON.parse(req.body);
+
+    try {
+      const client = await MongoClient.connect(
+        'mongodb+srv://<username>:<password>@<cluster_name>.1f312.mongodb.net/databaseName?retryWrites=true&w=majority'
+      );
+      const db = client.db();
+      const meetupsCollection = db.collection('meetups');
+      const result = await meetupsCollection.insertOne(data);
+
+      // close connection to database
+      client.close();
+
+      res.status(201).json({ message: 'Meetup Inserted' });
+    } catch (error) {
+      res.status(500).json({ message: error });
+    }
+  }
+}
+```
+
+```js
+// client side
+import NewMeetupForm from '../components/meetups/NewMeetupForm';
+import { useRouter } from 'next/router';
+
+const NewMeetUpPage = () => {
+  const router = useRouter();
+  const addMeetupHandler = async (enteredMeetupData) => {
+    console.log(JSON.stringify(enteredMeetupData));
+    const response = await fetch('/api/new-meetup', {
+      method: 'POST',
+      body: JSON.stringify(enteredMeetupData),
+    });
+
+    router.push('/');
+  };
+
+  return <NewMeetupForm onAddMeetup={addMeetupHandler} />;
+};
+
+export default NewMeetUpPage;
+```
+
+## Get Data from MongoDB
+
+```js
+export async function getStaticProps() {
+  // fetching data from API
+  const client = await MongoClient.connect(
+    'mongodb+srv://<username>:<password>@<cluster_name>.1f312.mongodb.net/myFirstDatabase?retryWrites=true&w=majority'
+  );
+  const db = client.db();
+  const meetupsCollection = db.collection('meetups');
+  const meetups = await meetupsCollection.find().toArray();
+  client.close();
+
+  return {
+    props: {
+      meetups: meetups.map((meetup) => ({
+        title: meetup.title,
+        address: meetup.address,
+        image: meetup.image,
+        id: meetup._id.toString(),
+      })),
+      revalidate: 1,
+    },
+  };
+}
+```
