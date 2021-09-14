@@ -189,4 +189,113 @@ Page Source
 
 ![image](images/use-getStaticProps.jpg)
 
+#### getStaticPaths()
+
+When you have dynamic routes in your project. You need to include `getStaticPaths()` in the dynamic page.
+
+```js
+// [meetupId].js
+import MeetingUpDetail from '../components/meetups/MeetupDetail';
+
+const MeetupDetails = (props) => {
+  return (
+    <>
+      <MeetingUpDetail
+        image={props.image}
+        title={props.title}
+        address={props.address}
+        description={props.description}
+      />
+    </>
+  );
+};
+
+// in case of dynamic page and using getStaticProps()
+// because the dynamic url is not pre-generated
+export async function getStaticPaths() {
+  return {
+    fallback: false,
+    paths: [
+      {
+        params: {
+          meetupId: 'meet1',
+        },
+      },
+      {
+        params: {
+          meetupId: 'meet2',
+        },
+      },
+      {
+        params: {
+          meetupId: 'meet3',
+        },
+      },
+    ],
+  };
+}
+
+export async function getStaticProps(context) {
+  const meetupId = context.params.meetupId;
+
+  return {
+    props: {
+      image:
+        'https://images.unsplash.com/photo-1631515998698-5738f613c5cd?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80',
+      id: meetupId,
+      title: 'Presentation',
+      address: '123, Panda City',
+      description: 'This is a presentation',
+    },
+  };
+}
+
+export default MeetupDetails;
+```
+
+### Building
+
+When run `npm run build`, Next.js will show data about the project.
+
+- Server - server-side renders at runtime (use getInitialProps or getServerSideProps)
+- Static - automatically rendered as static HTML (use no initial props)
+- SSG - automatically generated as static HTML + JSON (use getStaticProps) which be great for personal blogs because when the data are changed (current data will be outdated), you have to rebuild and deploy again.
+- ISR - incremental static regeneration (uses revalidate in getStaticProps) which used in case of the data are changed more frequently (this is an alternative for SSG).
+
+```js
+// ISR
+export function getStaticProps() {
+  // fetching data from API
+  // ...
+
+  return {
+    props: {
+      meetups: data,
+    },
+    // Next.js will generate this page every 10 seconds
+    // ensure that the data will not be outdated or older than 10 seconds
+    revalidate: 10,
+  };
+}
+```
+
 ### Server-side Rendering
+
+#### getServerSideProps()
+
+Sometimes, regular update with ISR is not enough. You may need to regenerate the page for every incoming request. Therefore, Next.js provides `getServerSideProps()` which not run during the build process but always run on the server after deployment.
+
+```js
+export async function getServerSideProps(context) {
+  const req = context.req;
+  const res = context.res;
+  // fetch data from an API
+  // ...
+
+  return {
+    props: {
+      meetups: data,
+    },
+  };
+}
+```
