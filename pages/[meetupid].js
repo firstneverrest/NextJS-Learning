@@ -1,13 +1,14 @@
+import { MongoClient, ObjectId } from 'mongodb';
 import MeetingUpDetail from '../components/meetups/MeetupDetail';
 
 const MeetupDetails = (props) => {
   return (
     <>
       <MeetingUpDetail
-        image={props.image}
-        title={props.title}
-        address={props.address}
-        description={props.description}
+        image={props.meetupData.image}
+        title={props.meetupData.title}
+        address={props.meetupData.address}
+        description={props.meetupData.description}
       />
     </>
   );
@@ -16,39 +17,48 @@ const MeetupDetails = (props) => {
 // in case of dynamic page and using getStaticProps()
 // because the dynamic url is not pre-generated
 export async function getStaticPaths() {
+  const client = await MongoClient.connect(
+    `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@${process.env.MONGODB_CLUSTER}.1f312.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`
+  );
+  const db = client.db();
+  const meetupsCollection = db.collection('meetups');
+  // find every meetup and get only id
+  const meetups = await meetupsCollection.find({}, { _id: 1 }).toArray();
+
+  client.close();
+
   return {
-    fallback: false,
-    paths: [
-      {
-        params: {
-          meetupId: 'meet1',
-        },
-      },
-      {
-        params: {
-          meetupId: 'meet2',
-        },
-      },
-      {
-        params: {
-          meetupId: 'meet3',
-        },
-      },
-    ],
+    fallback: true, // or blocking
+    paths: meetups.map((meetup) => ({
+      params: { meetupId: meetup._id.toString() },
+    })),
   };
 }
 
 export async function getStaticProps(context) {
   const meetupId = context.params.meetupId;
 
+  const client = await MongoClient.connect(
+    `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@${process.env.MONGODB_CLUSTER}.1f312.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`
+  );
+  const db = client.db();
+  const meetupsCollection = db.collection('meetups');
+  // find meetup with specific id according to url (_id form mongodb)
+  const selectedMeetup = await meetupsCollection.findOne({
+    _id: ObjectId(meetupId),
+  });
+
+  client.close();
+
   return {
     props: {
-      image:
-        'https://images.unsplash.com/photo-1631515998698-5738f613c5cd?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80',
-      id: meetupId,
-      title: 'Presentation',
-      address: '123, Panda City',
-      description: 'This is a presentation',
+      meetupData: {
+        id: selectedMeetup._id.toString(),
+        title: selectedMeetup.title,
+        address: selectedMeetup.address,
+        image: selectedMeetup.image,
+        description: selectedMeetup.description,
+      },
     },
   };
 }
