@@ -7,7 +7,7 @@ You can see more information in [Next.js documentation](https://nextjs.org/docs/
 ## Key features & Benefits
 
 1. file-based routing - define pages and routes with files and folders instead of code which is less code, less work and highly understandable
-2. server-side rendering - automatic page pre-rendering which great for SEO and initial load
+2. server-side rendering - automatic page pre-rendering which great for SEO and initial load (SSR, SSG and much more)
 3. Fullstack capabilities - easily add backend code to your Next/React apps which storing data, getting data, authentication etc. can be added to your React projects
 
 ## Installation
@@ -412,3 +412,97 @@ export async function getStaticProps() {
   };
 }
 ```
+
+## Fetching Data in Dynamic Route
+
+```js
+import { MongoClient, ObjectId } from 'mongodb';
+import MeetingUpDetail from '../components/meetups/MeetupDetail';
+
+const MeetupDetails = (props) => {
+  return (
+    <>
+      <MeetingUpDetail
+        image={props.meetupData.image}
+        title={props.meetupData.title}
+        address={props.meetupData.address}
+        description={props.meetupData.description}
+      />
+    </>
+  );
+};
+
+// in case of dynamic page and using getStaticProps()
+// because the dynamic url is not pre-generated
+export async function getStaticPaths() {
+  const client = await MongoClient.connect(
+    'mongodb+srv://neverrest:AVGt4g8Kq6MDFPF6@cluster0.1f312.mongodb.net/myFirstDatabase?retryWrites=true&w=majority'
+  );
+  const db = client.db();
+  const meetupsCollection = db.collection('meetups');
+  // find every meetup and get only id
+  const meetups = await meetupsCollection.find({}, { _id: 1 }).toArray();
+
+  client.close();
+
+  return {
+    fallback: false,
+    paths: meetups.map((meetup) => ({
+      params: { meetupId: meetup._id.toString() },
+    })),
+  };
+}
+
+export async function getStaticProps(context) {
+  const meetupId = context.params.meetupId;
+
+  const client = await MongoClient.connect(
+    'mongodb+srv://neverrest:AVGt4g8Kq6MDFPF6@cluster0.1f312.mongodb.net/myFirstDatabase?retryWrites=true&w=majority'
+  );
+  const db = client.db();
+  const meetupsCollection = db.collection('meetups');
+  // find meetup with specific id according to url (_id form mongodb)
+  const selectedMeetup = await meetupsCollection.findOne({
+    _id: ObjectId(meetupId),
+  });
+
+  client.close();
+
+  return {
+    props: {
+      meetupData: {
+        id: selectedMeetup._id.toString(),
+        title: selectedMeetup.title,
+        address: selectedMeetup.address,
+        image: selectedMeetup.image,
+        description: selectedMeetup.description,
+      },
+    },
+  };
+}
+
+export default MeetupDetails;
+```
+
+## Add Header
+
+```js
+// src/index.js
+import Head from 'next/head';
+
+const HomePage = (props) => {
+  return (
+    <>
+      <Head>
+        <title>NextJS Project</title>
+        <meta name="description" content="My First NextJS Project" />
+      </Head>
+      <MeetupList meetups={props.meetups} />
+    </>
+  );
+};
+```
+
+## Deploy
+
+You can host Next.js project with Vercel. Vercel will access your git repository and build your project. In production, you need to change fallback to true or blocking to not cause the 404 page. When you want to fix or add a new feature, just push code to main branch and Next.js will start building and redeploying for you.
