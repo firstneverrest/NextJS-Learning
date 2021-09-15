@@ -1,14 +1,23 @@
 import { MongoClient } from 'mongodb';
+import Head from 'next/head';
 import MeetupList from '../components/meetups/MeetupList';
 
 const HomePage = (props) => {
-  return <MeetupList meetups={props.meetups} />;
+  return (
+    <>
+      <Head>
+        <title>NextJS Project</title>
+        <meta name="description" content="My First NextJS Project" />
+      </Head>
+      <MeetupList meetups={props.meetups} />
+    </>
+  );
 };
 
 export async function getStaticProps() {
   // fetching data from API
   const client = await MongoClient.connect(
-    'mongodb+srv://neverrest:AVGt4g8Kq6MDFPF6@cluster0.1f312.mongodb.net/myFirstDatabase?retryWrites=true&w=majority'
+    `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@${process.env.MONGODB_CLUSTER}.1f312.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`
   );
   const db = client.db();
   const meetupsCollection = db.collection('meetups');
