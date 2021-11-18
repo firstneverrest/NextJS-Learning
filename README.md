@@ -506,3 +506,25 @@ const HomePage = (props) => {
 ## Deploy
 
 You can host Next.js project with Vercel. Vercel will access your git repository and build your project. In production, you need to change fallback to true or blocking to not cause the 404 page. When you want to fix or add a new feature, just push code to main branch and Next.js will start building and redeploying for you.
+
+# Import SVG
+
+You can directly use `<img />` tag to insert SVG by providing its path. How about importing svg as a component? You can't import svg directly like JSX component. To enable importing svg, you need to install SVGR tool.
+
+```
+npm install @svgr/webpack
+```
+
+```js
+// next.config.js at root directory
+module.exports = {
+  webpack(config) {
+    config.module.rules.push({
+      test: /\.svg$/,
+      use: ['@svgr/webpack'],
+    });
+
+    return config;
+  },
+};
+```
